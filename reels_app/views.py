@@ -1,62 +1,97 @@
 from rest_framework.response import Response
-from .models import Posts, LikedBy
+from .models import Posts, LikedBy, Comments
 from django.contrib.auth.models import User
 from .serializers import serialized_post, like_reel_serializer, shared_post_serializer, comments_serializer
 from rest_framework import generics
+from rest_framework.pagination import PageNumberPagination
 
+
+class CustomPagination(PageNumberPagination):
+    page_size=5
+    page_query_param = 'page'
+    page_size_query_param = 'size'
+    max_page_size = 20
+    last_page_strings = [("last_page")]
+ 
+
+# class getReels(generics.ListAPIView):
+#     pagination_class = CustomPagination 
+#     def get(self, request, *args, **kwargs):        
+#         currentUser = request.data['userId']
+#         queryset = Posts.objects.all()
+#         serialized = serialized_post(queryset, many=True)
+#         res ={
+#             "Res":self.get_paginated_response(serialized.data)
+#         }
+#         return Response(res)
 
 class getReels(generics.ListAPIView):
-    def get(self, request, *args, **kwargs):        
-        currentUser = request.data['userId']
-        queryset = Posts.objects.all()
-        serialized = serialized_post(queryset, many=True)
-        res ={
-            "Res":serialized.data
-        }
-        return Response(res)
+    queryset = Posts.objects.all()
+    serializer_class = serialized_post
+    pagination_class = CustomPagination
+
+
 
 
 class likeReel(generics.CreateAPIView):
     def post(self, request, *args, **kwargs):
-        print(request.data)
-        userId=request.data['userId']
-        postId=request.data['postId']
-        check = LikedBy.objects.filter(user = userId, post = postId)
-        
-        if check.count()==0:
-            dataset = {"user":userId, "post":postId}
-            queryset = like_reel_serializer(data = dataset)
-            if queryset.is_valid():
-                queryset.save()
+        try:
+                
+            userId=request.data['userId']
+            postId=request.data['postId']
+            check = LikedBy.objects.filter(user = userId, post = postId)
+            
+            if check.count()==0:
+                dataset = {"user":userId, "post":postId}
+                queryset = like_reel_serializer(data = dataset)
+                if queryset.is_valid():
+                    queryset.save()
+                else:
+                    print(queryset.error_messages)
+                return Response("Post liked")
             else:
-                print(queryset.error_messages)
-            return Response("Post liked")
-        else:
-            check.delete()
-            return Response("Post Unliked")
+                check.delete()
+                return Response("Post Unliked")
+        except Exception as E:
+            return Response(str(E))
 
 
 
 class shareReel(generics.ListAPIView):
     def get(self,request):
-        print(request.data)
-        details = request.data
-        serialized = shared_post_serializer(data = details)
-        if serialized.is_valid():
-            serialized.save()
-            return Response("shared!")
-        else:
-            return Response(serialized.errors)
+        try:
+                
+            print(request.data)
+            details = request.data
+            serialized = shared_post_serializer(data = details)
+            if serialized.is_valid():
+                serialized.save()
+                return Response("shared!")
+            else:
+                return Response(serialized.errors)
+        except Exception as E:
+            return Response(str(E))
 
 
 class addComment(generics.CreateAPIView):
-    def post(self, request, *args, **kwargs):        
-        post = request.data['post']
-        commented_by  = request.data['commented_by']
-        comment= request.data['comment']
-        dataset = {"post":post,"commented_by":commented_by,"comment":comment}
-        serialized = comments_serializer(dataset)
-        print(serialized.data,4444444444444444444444444)
+    def post(self, request, *args, **kwargs):
+        try:
+                
+            details = request.data
+            serialized = comments_serializer(data = details)
+            if serialized.is_valid():
+                serialized.save()
+            return Response("Comment added!")
+        
+        except Exception as E:
+            return Response(str(E))   
 
-        return super().post(request, *args, **kwargs)
-            
+class getComments(generics.ListAPIView):
+    def get(self, request, id, *args, **kwargs):
+        try:
+            queryset = Comments.objects.filter(post = id)
+            serialized = comments_serializer(queryset, many=True)
+            return Response(serialized.data)
+        except Exception as E:
+            return Response(str(E))
+    

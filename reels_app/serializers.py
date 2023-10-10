@@ -1,6 +1,5 @@
 from rest_framework.response import Response
 from rest_framework import serializers
-# from snippets.models import Snippet, LANGUAGE_CHOICES, STYLE_CHOICES
 from .models import Posts, LikedBy, user_profile, SharedPost, Comments
 
 
@@ -8,11 +7,10 @@ class serialized_post(serializers.ModelSerializer):
     likes = serializers.SerializerMethodField()
     liked = serializers.SerializerMethodField()
     shares = serializers.SerializerMethodField()
-    # profilePicture = serializers.SerializerMethodField()
+    comments = serializers.SerializerMethodField()
     class Meta:
         model = Posts
-        # fields = '__all__'
-        fields = ('id','user','caption', 'video', 'likes', 'liked', 'shares')
+        fields = ('id','user','caption', 'video', 'likes', 'liked', 'shares', 'comments')
 
     def get_likes(self, id):
         likes = LikedBy.objects.filter(post=id).values()
@@ -26,10 +24,14 @@ class serialized_post(serializers.ModelSerializer):
             return False
         else:
             return True
+        
     def get_shares(self, id):
         totalShares = SharedPost.objects.filter(post = id)
         return totalShares.count()
 
+    def get_comments(self, id):
+        totalComments = Comments.objects.filter(post = id)
+        return totalComments.count()
 
 class like_reel_serializer(serializers.ModelSerializer):
     class Meta:
