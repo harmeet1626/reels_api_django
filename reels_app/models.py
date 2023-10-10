@@ -4,7 +4,9 @@ from django.contrib.auth.models import User
 
 class user_profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE ,blank=True, null=True)
-    ProfilePicture = models.CharField(max_length=255,blank=True, null=True)    
+    ProfilePicture = models.CharField(max_length=255,blank=True, null=True)
+    class Meta:
+        db_table = "user_profile"  
 
 
 class Posts(models.Model):
@@ -43,3 +45,10 @@ class Comments(models.Model):
     comment = models.CharField(max_length=1000, blank=True, null=True)
     class Meta:
         db_table = "comments"
+
+
+class Followers(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user")
+    followed_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="followed_by")
+    class Meta:
+        db_table = "followers"

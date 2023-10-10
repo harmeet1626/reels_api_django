@@ -1,7 +1,7 @@
 from rest_framework.response import Response
-from .models import Posts, LikedBy, Comments
+from .models import Posts, LikedBy, Comments, user_profile
 from django.contrib.auth.models import User
-from .serializers import serialized_post, like_reel_serializer, shared_post_serializer, comments_serializer
+from .serializers import serialized_post, like_reel_serializer, shared_post_serializer, comments_serializer, user_profile_serializer, Followers_serializers
 from rest_framework import generics
 from rest_framework.pagination import PageNumberPagination
 
@@ -35,12 +35,10 @@ class getReels(generics.ListAPIView):
 
 class likeReel(generics.CreateAPIView):
     def post(self, request, *args, **kwargs):
-        try:
-                
+        try:                
             userId=request.data['userId']
             postId=request.data['postId']
-            check = LikedBy.objects.filter(user = userId, post = postId)
-            
+            check = LikedBy.objects.filter(user = userId, post = postId)            
             if check.count()==0:
                 dataset = {"user":userId, "post":postId}
                 queryset = like_reel_serializer(data = dataset)
@@ -48,10 +46,14 @@ class likeReel(generics.CreateAPIView):
                     queryset.save()
                 else:
                     print(queryset.error_messages)
-                return Response("Post liked")
+                totalLikes = LikedBy.objects.filter(post = postId)
+                res = {"message":"post liked!","totalLikes": totalLikes.count() }
+                return Response(res)
             else:
                 check.delete()
-                return Response("Post Unliked")
+                totalLikes = LikedBy.objects.filter(post = postId)
+                res = {"message":"post Unliked!","totalLikes": totalLikes.count() }
+                return Response(res)
         except Exception as E:
             return Response(str(E))
 
@@ -59,9 +61,7 @@ class likeReel(generics.CreateAPIView):
 
 class shareReel(generics.ListAPIView):
     def get(self,request):
-        try:
-                
-            print(request.data)
+        try:                
             details = request.data
             serialized = shared_post_serializer(data = details)
             if serialized.is_valid():
@@ -75,14 +75,12 @@ class shareReel(generics.ListAPIView):
 
 class addComment(generics.CreateAPIView):
     def post(self, request, *args, **kwargs):
-        try:
-                
+        try:                
             details = request.data
             serialized = comments_serializer(data = details)
             if serialized.is_valid():
                 serialized.save()
-            return Response("Comment added!")
-        
+            return Response("Comment added!")        
         except Exception as E:
             return Response(str(E))   
 
@@ -94,4 +92,13 @@ class getComments(generics.ListAPIView):
             return Response(serialized.data)
         except Exception as E:
             return Response(str(E))
-    
+
+class follow(generics.CreateAPIView):
+    def post(self, request, *args, **kwargs):
+        dataset = request.data
+        serialized= Followers_serializers(data=dataset)
+        if serialized.is_valid():
+            serialized.save()
+            return Response("Followed")
+        else:
+            return Response(serialized.errors)
