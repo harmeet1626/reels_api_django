@@ -1,18 +1,29 @@
 from rest_framework.response import Response
 from rest_framework import serializers
 from .models import Posts, LikedBy, user_profile, SharedPost, Comments, Followers
+from django.contrib.auth.models import User
+
 
 
 class serialized_post(serializers.ModelSerializer):
     likes = serializers.SerializerMethodField()
+    # user_details = User()
     liked = serializers.SerializerMethodField()
     shares = serializers.SerializerMethodField()
     comments = serializers.SerializerMethodField()
     profilePic = serializers.SerializerMethodField()
     isfollowing = serializers.SerializerMethodField()
+    userName = serializers.SerializerMethodField()
     class Meta:
         model = Posts
-        fields = ('id','user','caption', 'video', 'likes', 'liked', 'shares', 'comments','isfollowing','profilePic')
+        fields = ('id','user','caption', 'video', 'likes', 'liked', 'shares', 'comments','isfollowing','userName','profilePic')
+
+    def get_userName(self, id):
+        post_id = id.id
+        post = Posts.objects.filter(id = post_id).values('user__id')
+        user_id = post[0]['user__id']
+        userName = User.objects.filter(id = user_id).values('username')
+        return userName[0]['username']
 
     def get_likes(self, id):
         likes = LikedBy.objects.filter(post=id).values()
